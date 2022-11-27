@@ -1,4 +1,5 @@
 import sqlite3
+import pandas as pd
 
 from . import exceptions
 
@@ -134,6 +135,7 @@ class Database:
             data = tuple(data.values())
 
         self.insert(self._table, data)
+        self.export_csv(f"{self._table}.csv", self._table)
 
     def insert(self, table: str = None, data: list or tuple = None) -> None:
         """Insert a new row into the db table
@@ -208,3 +210,31 @@ class Database:
             config.update(module_conf)
 
         return config
+
+    def export_csv(self, file_name: str, table: str = None, range_: str = None):
+        if table is None:
+            table = self._table
+
+        # normal select for all values
+
+        if range_ is None:
+            try:
+                db_df = pd.read_sql_query(f"SELECT * FROM {table}", self._db)
+                db_df.to_csv(file_name, index=False)
+            except:
+                raise exceptions.DatabaseError
+            return
+
+        # using range for values
+
+        if not isinstance(range_, tuple) and len(range_) != 2:
+            raise exceptions.DatabaseError
+
+        start, end = range_
+
+        try:
+                db_df = pd.read_sql_query(f"SELECT * FROM {table} WHERE id >= {start} AND id <= {end}", self._db)
+                db_df.to_csv(file_name, index=False)
+        except:
+            raise exceptions.DatabaseError
+        return
